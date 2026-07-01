@@ -16,12 +16,16 @@ class UpgradeManager {
         nextUpgradeScore = GameConfig.UPGRADE_INTERVAL_SCORE
     }
 
-    fun startChoiceIfReady(score: Int): Boolean {
+    fun startChoiceIfReady(score: Int, upcomingBossScore: Int): Boolean {
         if (currentChoices.isNotEmpty()) {
             return true
         }
 
-        if (score < nextUpgradeScore || score >= GameConfig.BOSS_SCORE_THRESHOLD) {
+        while (nextUpgradeScore < score) {
+            nextUpgradeScore += GameConfig.UPGRADE_INTERVAL_SCORE
+        }
+
+        if (score < nextUpgradeScore || score >= upcomingBossScore) {
             return false
         }
 
@@ -31,6 +35,12 @@ class UpgradeManager {
             .take(GameConfig.UPGRADE_CHOICES)
         nextUpgradeScore += GameConfig.UPGRADE_INTERVAL_SCORE
         return true
+    }
+
+    fun skipChoicesThrough(score: Int) {
+        while (nextUpgradeScore <= score) {
+            nextUpgradeScore += GameConfig.UPGRADE_INTERVAL_SCORE
+        }
     }
 
     fun choose(index: Int, modifiers: RunModifiers): UpgradeType? {

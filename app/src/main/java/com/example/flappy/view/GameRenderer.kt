@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
+import com.example.flappy.game.GameMode
 import com.example.flappy.game.GameState
 import com.example.flappy.game.GameWorld
 
@@ -22,6 +23,36 @@ class GameRenderer(private val world: GameWorld) {
 
     private val obstaclePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(76, 190, 112)
+        style = Paint.Style.FILL
+    }
+
+    private val bossPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(198, 78, 96)
+        style = Paint.Style.FILL
+    }
+
+    private val bossCorePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(255, 140, 112)
+        style = Paint.Style.FILL
+    }
+
+    private val bossProjectilePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(255, 92, 92)
+        style = Paint.Style.FILL
+    }
+
+    private val playerProjectilePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(86, 224, 216)
+        style = Paint.Style.FILL
+    }
+
+    private val healthTrackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(58, 68, 80)
+        style = Paint.Style.FILL
+    }
+
+    private val healthFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(255, 205, 66)
         style = Paint.Style.FILL
     }
 
@@ -72,6 +103,9 @@ class GameRenderer(private val world: GameWorld) {
 
     private val textBounds = Rect()
     private val cardRect = RectF()
+    private val healthRect = RectF()
+    private val healthFillRect = RectF()
+    private val bossCoreRect = RectF()
 
     fun upgradeChoiceIndexAt(x: Float, y: Float, width: Int, height: Int): Int? {
         val choices = world.upgradeChoices
@@ -91,6 +125,7 @@ class GameRenderer(private val world: GameWorld) {
 
         canvas.drawRect(0f, 0f, width, height, backgroundPaint)
         drawObstacles(canvas)
+        drawBossEncounter(canvas, width, height)
         canvas.drawRect(world.player.bounds, playerPaint)
         drawHud(canvas, width, height)
 
@@ -106,10 +141,42 @@ class GameRenderer(private val world: GameWorld) {
         }
     }
 
+    private fun drawBossEncounter(canvas: Canvas, width: Float, height: Float) {
+        if (world.mode != GameMode.Boss) {
+            return
+        }
+
+        world.playerProjectiles.forEach { projectile ->
+            canvas.drawRoundRect(projectile.bounds, 6f, 6f, playerProjectilePaint)
+        }
+
+        world.bossProjectiles.forEach { projectile ->
+            canvas.drawRect(projectile.bounds, bossProjectilePaint)
+        }
+
+        val bossBounds = world.boss.bounds
+        canvas.drawRect(bossBounds, bossPaint)
+
+        val coreInsetX = bossBounds.width() * 0.28f
+        val coreInsetY = bossBounds.height() * 0.3f
+        bossCoreRect.set(
+            bossBounds.left + coreInsetX,
+            bossBounds.top + coreInsetY,
+            bossBounds.right - coreInsetX,
+            bossBounds.bottom - coreInsetY
+        )
+        canvas.drawRect(bossCoreRect, bossCorePaint)
+        drawBossHealth(canvas, width, height)
+    }
+
     private fun drawHud(canvas: Canvas, width: Float, height: Float) {
         textPaint.textSize = (height * 0.06f).coerceIn(42f, 76f)
         canvas.drawText(world.score.toString(), width / 2f, height * 0.11f, textPaint)
         drawRunSummary(canvas, width, height)
+        if (world.mode == GameMode.Boss) {
+            smallTextPaint.textSize = (height * 0.02f).coerceIn(20f, 30f)
+            canvas.drawText("BOSS", width / 2f, height * 0.155f, smallTextPaint)
+        }
 
         when (world.state) {
             GameState.Ready -> drawCenteredMessage(
@@ -152,7 +219,7 @@ class GameRenderer(private val world: GameWorld) {
         textPaint.textSize = (height * 0.043f).coerceIn(32f, 56f)
         smallTextPaint.textSize = (height * 0.021f).coerceIn(20f, 30f)
         canvas.drawText("Choose Your Upgrade", width / 2f, height * 0.2f, textPaint)
-        canvas.drawText("Boss arrives at score ${com.example.flappy.game.GameConfig.BOSS_SCORE_THRESHOLD}", width / 2f, height * 0.245f, smallTextPaint)
+        canvas.drawText("Boss arrives at score ${world.nextBossScore}", width / 2f, height * 0.245f, smallTextPaint)
 
         val choices = world.upgradeChoices
         choices.forEachIndexed { index, upgrade ->
@@ -198,6 +265,23 @@ class GameRenderer(private val world: GameWorld) {
         textPaint.getTextBounds(title, 0, title.length, textBounds)
         canvas.drawText(title, width / 2f, height * 0.43f, textPaint)
         canvas.drawText(subtitle, width / 2f, height * 0.48f + textBounds.height(), smallTextPaint)
+    }
+
+    private fun drawBossHealth(canvas: Canvas, width: Float, height: Float) {
+        val barWidth = width * 0.62f
+        val barHeight = (height * 0.014f).coerceIn(16f, 26f)
+        val left = (width - barWidth) / 2f
+        val top = height * 0.17f
+        healthRect.set(left, top, left + barWidth, top + barHeight)
+        healthFillRect.set(
+            healthRect.left,
+            healthRect.top,
+            healthRect.left + healthRect.width() * world.bossHealthFraction,
+            healthRect.bottom
+        )
+
+        canvas.drawRoundRect(healthRect, barHeight / 2f, barHeight / 2f, healthTrackPaint)
+        canvas.drawRoundRect(healthFillRect, barHeight / 2f, barHeight / 2f, healthFillPaint)
     }
 
     private fun drawWrappedText(
