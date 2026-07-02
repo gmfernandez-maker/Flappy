@@ -6,11 +6,12 @@ import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import com.example.flappy.core.GameLoop
+import com.example.flappy.game.GameSaveStore
 import com.example.flappy.game.GameState
 import com.example.flappy.game.GameWorld
 
 class FlappyGameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback {
-    private val world = GameWorld()
+    private val world = GameWorld(GameSaveStore(context))
     private val renderer = GameRenderer(world)
     private var gameLoop: GameLoop? = null
 
@@ -34,7 +35,35 @@ class FlappyGameView(context: Context) : SurfaceView(context), SurfaceHolder.Cal
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
-            if (world.state == GameState.ChoosingUpgrade) {
+            val debugAction = renderer.debugActionAt(event.x, event.y, width, height)
+            if (debugAction != null) {
+                world.handleDebugAction(debugAction)
+            } else if (world.state == GameState.Title) {
+                val menuAction = renderer.mainMenuActionAt(event.x, event.y, width, height)
+                if (menuAction != null) {
+                    world.handleMainMenuAction(menuAction)
+                }
+            } else if (world.state == GameState.UpgradeShop) {
+                val backPressed = renderer.shopBackActionAt(event.x, event.y, width, height)
+                when {
+                    backPressed -> world.returnToTitle()
+                    renderer.upgradeShopActionAt(event.x, event.y, width, height) -> world.purchaseNextMetaUpgrade()
+                    else -> Unit
+                }
+            } else if (world.state == GameState.CharacterShop) {
+                val backPressed = renderer.shopBackActionAt(event.x, event.y, width, height)
+                when {
+                    backPressed -> world.returnToTitle()
+                    else -> {
+                        val characterIndex = renderer.characterShopActionAt(event.x, event.y, width, height)
+                        if (characterIndex != null) {
+                            world.chooseCharacter(characterIndex)
+                        }
+                    }
+                }
+            } else if (world.debugPanelOpen) {
+                return true
+            } else if (world.state == GameState.ChoosingUpgrade) {
                 val upgradeIndex = renderer.upgradeChoiceIndexAt(event.x, event.y, width, height)
                 if (upgradeIndex != null) {
                     world.chooseUpgrade(upgradeIndex)

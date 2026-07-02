@@ -1,8 +1,12 @@
 package com.example.flappy.game
 
 enum class GameState {
-    Ready,
+    Title,
+    UpgradeShop,
+    CharacterShop,
     Running,
     ChoosingUpgrade,
+    BossWarning,
+    BossDefeated,
     GameOver
 }

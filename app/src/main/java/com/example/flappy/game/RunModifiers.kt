@@ -19,6 +19,14 @@ class RunModifiers {
         private set
     var bossProjectileSpeedMultiplier = 1f
         private set
+    var playerShotDamageMultiplier = 1f
+        private set
+    var playerShotCooldownMultiplier = 1f
+        private set
+    var playerShotSpeedMultiplier = 1f
+        private set
+    var extraPlayerShots = 0
+        private set
     var shieldCharges = 0
         private set
 
@@ -32,6 +40,10 @@ class RunModifiers {
         obstacleSpacingMultiplier = 1f
         bossSurvivalDamageMultiplier = 1f
         bossProjectileSpeedMultiplier = 1f
+        playerShotDamageMultiplier = 1f
+        playerShotCooldownMultiplier = 1f
+        playerShotSpeedMultiplier = 1f
+        extraPlayerShots = 0
         shieldCharges = 0
     }
 
@@ -64,6 +76,24 @@ class RunModifiers {
 
     fun improveBossDamage() {
         bossSurvivalDamageMultiplier = (bossSurvivalDamageMultiplier * 1.18f).coerceAtMost(1.75f)
+    }
+
+    fun improveShotCooldown() {
+        playerShotCooldownMultiplier = (playerShotCooldownMultiplier * 0.88f).coerceAtLeast(0.58f)
+    }
+
+    fun improveShotDamage() {
+        playerShotDamageMultiplier = (playerShotDamageMultiplier * 1.18f).coerceAtMost(1.95f)
+    }
+
+    fun addSplitShot() {
+        extraPlayerShots = (extraPlayerShots + 1).coerceAtMost(2)
+        playerShotDamageMultiplier = (playerShotDamageMultiplier * 0.96f).coerceAtLeast(0.9f)
+    }
+
+    fun improvePiercingShot() {
+        playerShotSpeedMultiplier = (playerShotSpeedMultiplier * 1.16f).coerceAtMost(1.55f)
+        playerShotDamageMultiplier = (playerShotDamageMultiplier * 1.12f).coerceAtMost(1.95f)
     }
 
     fun tryConsumeShield(): Boolean {
